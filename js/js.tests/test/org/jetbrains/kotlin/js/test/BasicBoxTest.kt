@@ -82,8 +82,6 @@ abstract class BasicBoxTest(
     private val generateNodeJsRunner: Boolean = true,
     private val targetBackend: TargetBackend = TargetBackend.JS
 ) : KotlinTestWithEnvironment() {
-    private val additionalCommonFileDirectories = mutableListOf<String>()
-
     val pathToRootOutputDir = System.getProperty("kotlin.js.test.root.out.dir") ?: error("'kotlin.js.test.root.out.dir' is not set")
     private val testGroupOutputDirForCompilation = File(pathToRootOutputDir + "out/" + testGroupOutputDirPrefix)
     private val testGroupOutputDirForMinification = File(pathToRootOutputDir + "out-min/" + testGroupOutputDirPrefix)
@@ -253,10 +251,6 @@ abstract class BasicBoxTest(
             val localCommonFile = file.parent + "/" + COMMON_FILES_NAME + JavaScript.DOT_EXTENSION
             val localCommonFiles = if (File(localCommonFile).exists()) listOf(localCommonFile) else emptyList()
 
-            val additionalCommonFiles = additionalCommonFileDirectories.flatMap { baseDir ->
-                JsTestUtils.getFilesInDirectoryByExtension(baseDir + "/", JavaScript.EXTENSION)
-            }
-
             val inputJsFilesBefore = mutableListOf<String>()
             val inputJsFilesAfter = mutableListOf<String>()
 
@@ -301,14 +295,14 @@ abstract class BasicBoxTest(
             }
 
             val allJsFiles = additionalFiles + inputJsFilesBefore + generatedJsFiles.map { it.first } + globalCommonFiles + localCommonFiles +
-                    additionalCommonFiles + additionalMainFiles + inputJsFilesAfter
+                    additionalMainFiles + inputJsFilesAfter
 
             val dceAllJsFiles = additionalFiles + inputJsFilesBefore + generatedJsFiles.map {
                 it.first.replace(
                     outputDir.absolutePath,
                     dceOutputDir.absolutePath
                 )
-            } + globalCommonFiles + localCommonFiles + additionalCommonFiles + additionalMainFiles + inputJsFilesAfter
+            } + globalCommonFiles + localCommonFiles + additionalMainFiles + inputJsFilesAfter
 
             val pirAllJsFiles = additionalFiles + inputJsFilesBefore + generatedJsFiles.map {
                 it.first.replace(
@@ -316,7 +310,7 @@ abstract class BasicBoxTest(
                     pirOutputDir.absolutePath
                 )
             } +
-                    globalCommonFiles + localCommonFiles + additionalCommonFiles + additionalMainFiles + inputJsFilesAfter
+                    globalCommonFiles + localCommonFiles + additionalMainFiles + inputJsFilesAfter
 
 
             val dontRunGeneratedCode =
@@ -516,11 +510,8 @@ abstract class BasicBoxTest(
         val globalCommonFiles = JsTestUtils.getFilesInDirectoryByExtension(COMMON_FILES_DIR_PATH, KotlinFileType.EXTENSION)
         val localCommonFile = directory + "/" + COMMON_FILES_NAME + "." + KotlinFileType.EXTENSION
         val localCommonFiles = if (File(localCommonFile).exists()) listOf(localCommonFile) else emptyList()
-        // TODO probably it's no longer needed.
-        val additionalCommonFiles = additionalCommonFileDirectories.flatMap { baseDir ->
-            JsTestUtils.getFilesInDirectoryByExtension(baseDir + "/", KotlinFileType.EXTENSION)
-        }
-        val additionalFiles = globalCommonFiles + localCommonFiles + additionalCommonFiles
+
+        val additionalFiles = globalCommonFiles + localCommonFiles
         val allSourceFiles = (testFiles + additionalFiles).map(::File)
         val psiFiles = createPsiFiles(allSourceFiles.sortedBy { it.canonicalPath }.map { it.canonicalPath })
 
