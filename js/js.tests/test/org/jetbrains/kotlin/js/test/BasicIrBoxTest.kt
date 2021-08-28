@@ -187,7 +187,7 @@ abstract class BasicIrBoxTest(
         super.doTest(filePath, expectedResult, mainCallParameters)
     }
 
-    override val testChecker get() = if (runTestInNashorn) NashornIrJsTestChecker() else V8IrJsTestChecker
+    override val testChecker get() = if (runTestInNashorn) NashornIrJsTestChecker else V8IrJsTestChecker
 
     override fun translateFiles(
         units: List<TranslationUnit>,
