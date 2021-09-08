@@ -49,8 +49,17 @@ internal fun IrClass.hasConstStateAndNoSideEffects(context: Context): Boolean {
 
 internal class CodeGenerator(override val context: Context) : ContextUtils {
 
-    fun llvmFunction(function: IrFunction): LLVMValueRef = llvmFunctionOrNull(function) ?: error("no function ${function.name} in ${function.file.fqName}")
-    fun llvmFunctionOrNull(function: IrFunction): LLVMValueRef? = function.llvmFunctionOrNull
+    fun llvmFunction(function: IrFunction): LLVMValueRef =
+            functionDeclarationsOrNull(function)?.llvmFunction
+                    ?: error("no function ${function.name} in ${function.file.fqName}")
+
+    fun functionDeclarations(function: IrFunction): FunctionLlvmDeclarations =
+            functionDeclarationsOrNull(function)
+                    ?: error("no function ${function.name} in ${function.file.fqName}")
+
+    fun functionDeclarationsOrNull(function: IrFunction): FunctionLlvmDeclarations? =
+            function.llvmDeclarationsOrNull
+
     val intPtrType = LLVMIntPtrTypeInContext(llvmContext, llvmTargetData)!!
     internal val immOneIntPtrType = LLVMConstInt(intPtrType, 1, 1)!!
     internal val immThreeIntPtrType = LLVMConstInt(intPtrType, 3, 1)!!
@@ -473,15 +482,21 @@ internal abstract class FunctionGenerationContext(
 
     val stackLocalsManager = StackLocalsManagerImpl(this, stackLocalsInitBb)
 
-    data class FunctionInvokeInformation(val invokeInstruction: LLVMValueRef, val llvmFunction: LLVMValueRef, val rargs: CValues<CPointerVar<LLVMOpaqueValue>>,
-                                         val argsNumber: Int, val success: LLVMBasicBlockRef)
+    data class FunctionInvokeInformation(
+            val invokeInstruction: LLVMValueRef,
+            val llvmFunction: LLVMValueRef,
+            val rargs: CValues<CPointerVar<LLVMOpaqueValue>>,
+            val argsNumber: Int,
+            val success: LLVMBasicBlockRef,
+            val attributeProvider: LlvmFunctionAttributeProvider?
+    )
 
     private val invokeInstructions = mutableListOf<FunctionInvokeInformation>()
 
     /**
      * TODO: consider merging this with [ExceptionHandler].
      */
-    var forwardingForeignExceptionsTerminatedWith: LLVMValueRef? = null
+    var forwardingForeignExceptionsTerminatedWith: FunctionLlvmDeclarations? = null
 
     // Whether the generating function needs to initialize Kotlin runtime before execution. Useful for interop bridges,
     // for example.
@@ -638,10 +653,18 @@ internal abstract class FunctionGenerationContext(
                             Int32(size).llvm,
                             Int1(isVolatile).llvm))
 
+    fun call(llvmDeclarations: FunctionLlvmDeclarations, args: List<LLVMValueRef>,
+             resultLifetime: Lifetime = Lifetime.IRRELEVANT,
+             exceptionHandler: ExceptionHandler = ExceptionHandler.None,
+             verbatim: Boolean = false): LLVMValueRef =
+            call(llvmDeclarations.llvmFunction, args, resultLifetime, exceptionHandler, verbatim, llvmDeclarations.attributeProvider)
+
     fun call(llvmFunction: LLVMValueRef, args: List<LLVMValueRef>,
              resultLifetime: Lifetime = Lifetime.IRRELEVANT,
              exceptionHandler: ExceptionHandler = ExceptionHandler.None,
-             verbatim: Boolean = false): LLVMValueRef {
+             verbatim: Boolean = false,
+             attributeProvider: LlvmFunctionAttributeProvider? = null
+    ): LLVMValueRef {
         val callArgs = if (verbatim || !isObjectReturn(llvmFunction.type)) {
             args
         } else {
@@ -668,15 +691,18 @@ internal abstract class FunctionGenerationContext(
             }
             args + resultSlot
         }
-        return callRaw(llvmFunction, callArgs, exceptionHandler)
+        return callRaw(llvmFunction, callArgs, exceptionHandler, attributeProvider)
     }
 
     private fun callRaw(llvmFunction: LLVMValueRef, args: List<LLVMValueRef>,
-                        exceptionHandler: ExceptionHandler): LLVMValueRef {
+                        exceptionHandler: ExceptionHandler,
+                        attributeProvider: LlvmFunctionAttributeProvider?): LLVMValueRef {
         val rargs = args.toCValues()
         if (LLVMIsAFunction(llvmFunction) != null /* the function declaration */ &&
                 isFunctionNoUnwind(llvmFunction)) {
-            return LLVMBuildCall(builder, llvmFunction, rargs, args.size, "")!!
+            return LLVMBuildCall(builder, llvmFunction, rargs, args.size, "")!!.also {
+                attributeProvider?.addCallSiteAttributes(it)
+            }
         } else {
             val unwind = when (exceptionHandler) {
                 ExceptionHandler.Caller -> cleanupLandingpad
@@ -697,11 +723,12 @@ internal abstract class FunctionGenerationContext(
             val endLocation = position?.end
             val success = basicBlock("call_success", endLocation)
             val result = LLVMBuildInvoke(builder, llvmFunction, rargs, args.size, success, unwind, "")!!
+            attributeProvider?.addCallSiteAttributes(result)
             // Store invoke instruction and its success block in reverse order.
             // Reverse order allows save arguments valid during all work with invokes
             // because other invokes processed before can be inside arguments list.
             if (exceptionHandler == ExceptionHandler.Caller)
-                invokeInstructions.add(0, FunctionInvokeInformation(result, llvmFunction, rargs, args.size, success))
+                invokeInstructions.add(0, FunctionInvokeInformation(result, llvmFunction, rargs, args.size, success, attributeProvider))
             positionAtEnd(success)
 
             return result
@@ -858,7 +885,7 @@ internal abstract class FunctionGenerationContext(
             LLVMBuildExtractValue(builder, aggregate, index, name)!!
 
     fun gxxLandingpad(numClauses: Int, name: String = ""): LLVMValueRef {
-        val personalityFunction = context.llvm.gxxPersonalityFunction
+        val personalityFunction = context.llvm.gxxPersonalityFunction.llvmFunction
 
         // Type of `landingpad` instruction result (depends on personality function):
         val landingpadType = structType(int8TypePtr, int32Type)
@@ -1000,7 +1027,7 @@ internal abstract class FunctionGenerationContext(
         val exceptionRawPtr = call(context.llvm.cxaBeginCatchFunction, listOf(exceptionRecord))
 
         // This will take care of ARC - need to be done in the catching scope, i.e. before __cxa_end_catch
-        val exception = call(context.ir.symbols.createForeignException.owner.llvmFunction,
+        val exception = call(context.ir.symbols.createForeignException.owner.llvmDeclarations,
                 listOf(exceptionRawPtr),
                 Lifetime.GLOBAL, exceptionHandler)
 
@@ -1187,7 +1214,7 @@ internal abstract class FunctionGenerationContext(
             if (parent.isObjCClass()) {
                 // TODO: cache it too.
                 return call(
-                        codegen.llvmFunction(context.ir.symbols.interopInterpretObjCPointer.owner),
+                        codegen.functionDeclarations(context.ir.symbols.interopInterpretObjCPointer.owner),
                         listOf(getObjCClass(parent, exceptionHandler)),
                         Lifetime.GLOBAL,
                         exceptionHandler
@@ -1312,12 +1339,12 @@ internal abstract class FunctionGenerationContext(
                 val name = irClass.descriptor.getExternalObjCMetaClassBinaryName()
                 val objCClass = getObjCClass(name, llvmSymbolOrigin)
 
-                val getClass = context.llvm.externalFunction(
+                val getClass = context.llvm.externalFunction(LlvmFunctionProto(
                         "object_getClass",
-                        functionType(int8TypePtr, false, int8TypePtr),
+                        LlvmRetType(int8TypePtr),
+                        listOf(LlvmParamType(int8TypePtr)),
                         origin = context.standardLlvmSymbolsOrigin
-                )
-
+                ))
                 call(getClass, listOf(objCClass), exceptionHandler = exceptionHandler)
             } else {
                 getObjCClass(irClass.descriptor.getExternalObjCClassBinaryName(), llvmSymbolOrigin)
@@ -1481,7 +1508,8 @@ internal abstract class FunctionGenerationContext(
             invokeInstructions.forEach { functionInvokeInfo ->
                 positionBefore(functionInvokeInfo.invokeInstruction)
                 val newResult = LLVMBuildCall(builder, functionInvokeInfo.llvmFunction, functionInvokeInfo.rargs,
-                        functionInvokeInfo.argsNumber, "")
+                        functionInvokeInfo.argsNumber, "")!!
+                functionInvokeInfo.attributeProvider?.addCallSiteAttributes(newResult)
                 // Have to generate `br` instruction because of current scheme of debug info.
                 br(functionInvokeInfo.success)
                 LLVMReplaceAllUsesWith(functionInvokeInfo.invokeInstruction, newResult)
@@ -1522,7 +1550,7 @@ internal abstract class FunctionGenerationContext(
         handleEpilogueForExperimentalMM(context.llvm.Kotlin_mm_safePointFunctionEpilogue)
     }
 
-    private fun handleEpilogueForExperimentalMM(safePointFunction: LLVMValueRef) {
+    private fun handleEpilogueForExperimentalMM(safePointFunction: FunctionLlvmDeclarations) {
         if (context.memoryModel == MemoryModel.EXPERIMENTAL) {
             if (!forbidRuntime) {
                 call(safePointFunction, emptyList())
