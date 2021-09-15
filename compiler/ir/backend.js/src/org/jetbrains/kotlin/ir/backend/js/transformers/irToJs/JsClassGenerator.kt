@@ -166,7 +166,7 @@ class JsClassGenerator(private val irClass: IrClass, val context: JsGenerationCo
                     val setterForwarder = if (property.setter?.modality == Modality.FINAL) property.setter?.accessorRef()
                     else {
                         property.setter?.let {
-                            val setterArgName = JsName("value")
+                            val setterArgName = JsName("value", false)
                             it.propertyAccessorForwarder("setter forwarder") { setterRef ->
                                 JsInvocation(
                                     setterRef,
@@ -357,6 +357,11 @@ private val IrClassifierSymbol.isEffectivelyExternal get() = (owner as? IrDeclar
 class JsIrClassModel(val klass: IrClass) {
     val superClasses = klass.superTypes.map { it.classifierOrFail as IrClassSymbol }
 
+    val preDeclarationBlock = JsGlobalBlock()
+    val postDeclarationBlock = JsGlobalBlock()
+}
+
+class JsIrIcClassModel(val superClasses: List<JsName>) {
     val preDeclarationBlock = JsGlobalBlock()
     val postDeclarationBlock = JsGlobalBlock()
 }

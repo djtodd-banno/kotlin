@@ -1,27 +1,21 @@
 /*
- * Copyright 2010-2017 JetBrains s.r.o.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2010-2021 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
-package org.jetbrains.kotlin.serialization.js.ast
+package org.jetbrains.kotlin.ir.backend.js.utils.serialization
 
+import org.jetbrains.kotlin.ir.backend.js.transformers.irToJs.JsIrClassModel
+import org.jetbrains.kotlin.ir.backend.js.transformers.irToJs.JsIrIcClassModel
+import org.jetbrains.kotlin.ir.backend.js.transformers.irToJs.JsIrProgramFragment
+import org.jetbrains.kotlin.ir.backend.js.utils.emptyScope
 import org.jetbrains.kotlin.js.backend.ast.*
 import org.jetbrains.kotlin.js.backend.ast.JsImportedModule
 import org.jetbrains.kotlin.js.backend.ast.metadata.*
 import org.jetbrains.kotlin.js.backend.ast.metadata.LocalAlias
 import org.jetbrains.kotlin.js.backend.ast.metadata.SpecialFunction
 import org.jetbrains.kotlin.protobuf.CodedInputStream
+import org.jetbrains.kotlin.serialization.js.ast.JsAstProtoBuf
 import org.jetbrains.kotlin.serialization.js.ast.JsAstProtoBuf.*
 import org.jetbrains.kotlin.serialization.js.ast.JsAstProtoBuf.Expression.ExpressionCase
 import org.jetbrains.kotlin.serialization.js.ast.JsAstProtoBuf.Statement.StatementCase
@@ -31,92 +25,83 @@ import java.io.InputStream
 import java.io.InputStreamReader
 import java.util.*
 
-class JsAstDeserializer(program: JsProgram, private val sourceRoots: Iterable<File>) {
-    private val scope = JsRootScope(program)
+class JsIrAstDeserializer(/*private val sourceRoots: Iterable<File>*/) {
+    private val scope = emptyScope
     private val stringTable = mutableListOf<String>()
     private val nameTable = mutableListOf<Name>()
     private val nameCache = mutableListOf<JsName?>()
     private val fileStack: Deque<String> = ArrayDeque()
 
-    fun deserialize(input: InputStream): JsProgramFragment {
+    fun deserialize(input: InputStream): JsIrProgramFragment {
         return deserialize(Chunk.parseFrom(CodedInputStream.newInstance(input).apply { setRecursionLimit(4096) }))
     }
 
-    fun deserialize(proto: Chunk): JsProgramFragment {
+    fun deserialize(proto: Chunk): JsIrProgramFragment {
         stringTable += proto.stringTable.entryList
         nameTable += proto.nameTable.entryList
         nameCache += nameTable.map { null }
         try {
             return deserialize(proto.fragment)
-        }
-        finally {
+        } finally {
             stringTable.clear()
             nameTable.clear()
             nameCache.clear()
         }
     }
 
-    private fun deserialize(proto: Fragment): JsProgramFragment {
-        val fragment = JsProgramFragment(scope, proto.packageFqn)
+    private fun deserialize(proto: Fragment): JsIrProgramFragment {
+        val fragment = JsIrProgramFragment(proto.packageFqn)
 
         fragment.importedModules += proto.importedModuleList.map { importedModuleProto ->
-             JsImportedModule(
-                    deserializeString(importedModuleProto.externalNameId),
-                    deserializeName(importedModuleProto.internalNameId),
-                    if (importedModuleProto.hasPlainReference()) deserialize(importedModuleProto.plainReference) else null
+            JsImportedModule(
+                deserializeString(importedModuleProto.externalNameId),
+                deserializeName(importedModuleProto.internalNameId),
+                if (importedModuleProto.hasPlainReference()) deserialize(importedModuleProto.plainReference) else null
             )
         }
 
-        fragment.imports += proto.importEntryList.associate { importProto ->
+        proto.importEntryList.associateTo(fragment.imports) { importProto ->
             deserializeString(importProto.signatureId) to deserialize(importProto.expression)
         }
 
         if (proto.hasDeclarationBlock()) {
-            fragment.declarationBlock.statements += deserializeGlobalBlock(proto.declarationBlock).statements
+            fragment.declarations.statements += deserializeGlobalBlock(proto.declarationBlock).statements
         }
         if (proto.hasInitializerBlock()) {
-            fragment.initializerBlock.statements += deserializeGlobalBlock(proto.initializerBlock).statements
+            fragment.initializers.statements += deserializeGlobalBlock(proto.initializerBlock).statements
         }
         if (proto.hasExportBlock()) {
-            fragment.exportBlock.statements += deserializeGlobalBlock(proto.exportBlock).statements
+            fragment.exports.statements += deserializeGlobalBlock(proto.exportBlock).statements
         }
 
-        fragment.nameBindings += proto.nameBindingList.map { nameBindingProto ->
-            JsNameBinding(deserializeString(nameBindingProto.signatureId), deserializeName(nameBindingProto.nameId))
+        proto.nameBindingList.associateTo(fragment.nameBindings) { nameBindingProto ->
+            deserializeString(nameBindingProto.signatureId) to deserializeName(nameBindingProto.nameId)
         }
 
-        fragment.classes += proto.classModelList.associate { clsProto -> deserialize(clsProto).let { it.name to it } }
-
-        val moduleExpressions = proto.moduleExpressionList.map { deserialize(it) }
-        fragment.inlineModuleMap += proto.inlineModuleList.associate { inlineModuleProto ->
-            deserializeString(inlineModuleProto.signatureId) to moduleExpressions[inlineModuleProto.expressionId]
-        }
-
-        for (nameBinding in fragment.nameBindings) {
-            if (nameBinding.key in fragment.imports) {
-                nameBinding.name.imported = true
-            }
-        }
+        proto.irClassModelList.associateTo(fragment.classes) { clsProto -> deserialize(clsProto) }
 
         if (proto.hasTestsInvocation()) {
-            fragment.tests = deserialize(proto.testsInvocation)
+            fragment.testFunInvocation = deserialize(proto.testsInvocation)
         }
 
         if (proto.hasMainInvocation()) {
             fragment.mainFunction = deserialize(proto.mainInvocation)
         }
 
-        proto.inlinedLocalDeclarationsList.forEach {
-            fragment.inlinedLocalDeclarations[deserializeString(it.tag)] = deserializeGlobalBlock(it.block)
+        if (proto.hasSuiteFunction()) {
+            fragment.suiteFn = deserializeName(proto.suiteFunction)
         }
+
+        fragment.dts = proto.dts
 
         return fragment
     }
 
-    private fun deserialize(proto: ClassModel): JsClassModel {
-        val superName = if (proto.hasSuperNameId()) deserializeName(proto.superNameId) else null
-        return JsClassModel(deserializeName(proto.nameId), superName).apply {
-            proto.interfaceNameIdList.mapTo(interfaces) { deserializeName(it) }
+    private fun deserialize(proto: IrClassModel): Pair<JsName, JsIrIcClassModel> {
+        return deserializeName(proto.nameId) to JsIrIcClassModel(proto.superClassesList.map { deserializeName(it) }).apply {
+            if (proto.hasPreDeclarationBlock()) {
+                preDeclarationBlock.statements += deserializeGlobalBlock(proto.preDeclarationBlock).statements
+            }
             if (proto.hasPostDeclarationBlock()) {
                 postDeclarationBlock.statements += deserializeGlobalBlock(proto.postDeclarationBlock).statements
             }
@@ -125,9 +110,9 @@ class JsAstDeserializer(program: JsProgram, private val sourceRoots: Iterable<Fi
 
     private fun deserialize(proto: Statement): JsStatement {
         val statement = withLocation(
-                fileId = if (proto.hasFileId()) proto.fileId else null,
-                location = if (proto.hasLocation()) proto.location else null,
-                action = { deserializeNoMetadata(proto) }
+            fileId = if (proto.hasFileId()) proto.fileId else null,
+            location = if (proto.hasLocation()) proto.location else null,
+            action = { deserializeNoMetadata(proto) }
         )
         if (statement is HasMetadata) {
             statement.synthetic = proto.synthetic
@@ -192,31 +177,31 @@ class JsAstDeserializer(program: JsProgram, private val sourceRoots: Iterable<Fi
         StatementCase.IF_STATEMENT -> {
             val ifProto = proto.ifStatement
             JsIf(
-                    deserialize(ifProto.condition),
-                    deserialize(ifProto.thenStatement),
-                    if (ifProto.hasElseStatement()) deserialize(ifProto.elseStatement) else null
+                deserialize(ifProto.condition),
+                deserialize(ifProto.thenStatement),
+                if (ifProto.hasElseStatement()) deserialize(ifProto.elseStatement) else null
             )
         }
 
         StatementCase.SWITCH_STATEMENT -> {
             val switchProto = proto.switchStatement
             JsSwitch(
-                    deserialize(switchProto.expression),
-                    switchProto.entryList.map { entryProto ->
-                        val member = withLocation(
-                                fileId = if (entryProto.hasFileId()) entryProto.fileId else null,
-                                location = if (entryProto.hasLocation()) entryProto.location else null
-                        ) {
-                            if (entryProto.hasLabel()) {
-                                JsCase().apply { caseExpression = deserialize(entryProto.label) }
-                            }
-                            else {
-                                JsDefault()
-                            }
+                deserialize(switchProto.expression),
+                switchProto.entryList.map { entryProto ->
+                    val member = withLocation(
+                        fileId = if (entryProto.hasFileId()) entryProto.fileId else null,
+                        location = if (entryProto.hasLocation()) entryProto.location else null
+                    ) {
+                        if (entryProto.hasLabel()) {
+                            JsCase().apply { caseExpression = deserialize(entryProto.label) }
                         }
-                        member.statements += entryProto.statementList.map { deserialize(it) }
-                        member
+                        else {
+                            JsDefault()
+                        }
                     }
+                    member.statements += entryProto.statementList.map { deserialize(it) }
+                    member
+                }
             )
         }
 
@@ -272,16 +257,17 @@ class JsAstDeserializer(program: JsProgram, private val sourceRoots: Iterable<Fi
 
         StatementCase.EMPTY -> JsEmpty
 
-        StatementCase.SINGLE_LINE_COMMENT,
+        StatementCase.SINGLE_LINE_COMMENT -> JsSingleLineComment(proto.singleLineComment.message)
+
         StatementCase.STATEMENT_NOT_SET,
         null -> error("Statement not set")
     }
 
     private fun deserialize(proto: Expression): JsExpression {
         val expression = withLocation(
-                fileId = if (proto.hasFileId()) proto.fileId else null,
-                location = if (proto.hasLocation()) proto.location else null,
-                action = { deserializeNoMetadata(proto) }
+            fileId = if (proto.hasFileId()) proto.fileId else null,
+            location = if (proto.hasLocation()) proto.location else null,
+            action = { deserializeNoMetadata(proto) }
         )
         expression.synthetic = proto.synthetic
         expression.sideEffects = map(proto.sideEffects)
@@ -323,10 +309,10 @@ class JsAstDeserializer(program: JsProgram, private val sourceRoots: Iterable<Fi
         ExpressionCase.OBJECT_LITERAL -> {
             val objectProto = proto.objectLiteral
             JsObjectLiteral(
-                    objectProto.entryList.map { entryProto ->
-                        JsPropertyInitializer(deserialize(entryProto.key), deserialize(entryProto.value))
-                    },
-                    objectProto.multiline
+                objectProto.entryList.map { entryProto ->
+                    JsPropertyInitializer(deserialize(entryProto.key), deserialize(entryProto.value))
+                },
+                objectProto.multiline
             )
         }
 
@@ -370,9 +356,9 @@ class JsAstDeserializer(program: JsProgram, private val sourceRoots: Iterable<Fi
         ExpressionCase.CONDITIONAL -> {
             val conditionalProto = proto.conditional
             JsConditional(
-                    deserialize(conditionalProto.testExpression),
-                    deserialize(conditionalProto.thenExpression),
-                    deserialize(conditionalProto.elseExpression)
+                deserialize(conditionalProto.testExpression),
+                deserialize(conditionalProto.thenExpression),
+                deserialize(conditionalProto.elseExpression)
             )
         }
 
@@ -404,8 +390,8 @@ class JsAstDeserializer(program: JsProgram, private val sourceRoots: Iterable<Fi
         ExpressionCase.INVOCATION -> {
             val invocationProto = proto.invocation
             JsInvocation(
-                    deserialize(invocationProto.qualifier),
-                    invocationProto.argumentList.map { deserialize(it) }
+                deserialize(invocationProto.qualifier),
+                invocationProto.argumentList.map { deserialize(it) }
             ).apply {
                 if (invocationProto.hasInlineStrategy()) {
                     isInline = map(invocationProto.inlineStrategy)
@@ -416,8 +402,8 @@ class JsAstDeserializer(program: JsProgram, private val sourceRoots: Iterable<Fi
         ExpressionCase.INSTANTIATION -> {
             val instantiationProto = proto.instantiation
             JsNew(
-                    deserialize(instantiationProto.qualifier),
-                    instantiationProto.argumentList.map { deserialize(it) }
+                deserialize(instantiationProto.qualifier),
+                instantiationProto.argumentList.map { deserialize(it) }
             )
         }
 
@@ -429,8 +415,8 @@ class JsAstDeserializer(program: JsProgram, private val sourceRoots: Iterable<Fi
         val vars = JsVars(proto.multiline)
         for (declProto in proto.declarationList) {
             vars.vars += withLocation(
-                    fileId = if (declProto.hasFileId()) declProto.fileId else null,
-                    location = if (declProto.hasLocation()) declProto.location else null
+                fileId = if (declProto.hasFileId()) declProto.fileId else null,
+                location = if (declProto.hasLocation()) declProto.location else null
             ) {
                 val initialValue = if (declProto.hasInitialValue()) deserialize(declProto.initialValue) else null
                 JsVars.JsVar(deserializeName(declProto.nameId), initialValue)
@@ -573,17 +559,17 @@ class JsAstDeserializer(program: JsProgram, private val sourceRoots: Iterable<Fi
             fileStack.push(deserializedFile)
         }
         val node = action()
-        if (deserializedLocation != null) {
-            val contentFile = sourceRoots
-                    .map { File(it, file) }
-                    .firstOrNull { it.exists() }
-            node.source = if (contentFile != null) {
-                JsLocationWithEmbeddedSource(deserializedLocation, null) { InputStreamReader(FileInputStream(contentFile), "UTF-8") }
-            }
-            else {
-                deserializedLocation
-            }
-        }
+//        if (deserializedLocation != null) {
+//            val contentFile = sourceRoots
+//                .map { File(it, file) }
+//                .firstOrNull { it.exists() }
+//            node.source = if (contentFile != null) {
+//                JsLocationWithEmbeddedSource(deserializedLocation, null) { InputStreamReader(FileInputStream(contentFile), "UTF-8") }
+//            }
+//            else {
+//                deserializedLocation
+//            }
+//        }
         if (shouldUpdateFile) {
             fileStack.pop()
         }
