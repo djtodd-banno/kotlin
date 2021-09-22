@@ -5,7 +5,6 @@
 
 package org.jetbrains.kotlin.analysis.api.fir.components
 
-import org.jetbrains.kotlin.fir.declarations.FirResolvePhase
 import org.jetbrains.kotlin.analysis.api.components.KtDeclarationRendererOptions
 import org.jetbrains.kotlin.analysis.api.components.KtSymbolDeclarationRendererProvider
 import org.jetbrains.kotlin.analysis.api.components.KtTypeRendererOptions
@@ -18,6 +17,7 @@ import org.jetbrains.kotlin.analysis.api.symbols.*
 import org.jetbrains.kotlin.analysis.api.symbols.markers.*
 import org.jetbrains.kotlin.analysis.api.tokens.ValidityToken
 import org.jetbrains.kotlin.analysis.api.types.KtType
+import org.jetbrains.kotlin.fir.declarations.FirResolvePhase
 
 internal class KtFirSymbolDeclarationRendererProvider(
     override val analysisSession: KtFirAnalysisSession,
@@ -42,7 +42,11 @@ internal class KtFirSymbolDeclarationRendererProvider(
 
                 symbol.firRef.withFir(FirResolvePhase.BODY_RESOLVE) { fir ->
                     val containingFir = containingSymbol?.firRef?.withFirUnsafe { it }
-                    FirIdeRenderer.render(fir, containingFir, options, fir.moduleData.session)
+                    var result = FirIdeRenderer.render(fir, containingFir, options, fir.moduleData.session)
+                    if (symbol is KtExtensionReceiverSymbol) {
+                        result = "extension receiver of " + result
+                    }
+                    result
                 }
             }
             else -> {

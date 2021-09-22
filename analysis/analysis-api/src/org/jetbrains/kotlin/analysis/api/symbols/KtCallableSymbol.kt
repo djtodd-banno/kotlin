@@ -19,3 +19,7 @@ public abstract class KtCallableSymbol : KtSymbol, KtSymbolWithKind {
 
     abstract override fun createPointer(): KtSymbolPointer<KtCallableSymbol>
 }
+
+public abstract class KtExtensionReceiverSymbol : KtSymbol {
+    public abstract val type: KtTypeAndAnnotations
+}
