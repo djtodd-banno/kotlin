@@ -81,7 +81,11 @@ class IrModuleToJsTransformer(
         return CompilerResult(jsCode, dceJsCode, dts)
     }
 
-    private fun generateWrappedModuleBody(modules: Iterable<IrModuleFragment>, exportedModule: ExportedModule, namer: NameTables): CompilationOutputs {
+    private fun generateWrappedModuleBody(
+        modules: Iterable<IrModuleFragment>,
+        exportedModule: ExportedModule,
+        namer: NameTables
+    ): CompilationOutputs {
         if (multiModule) {
 
             val refInfo = buildCrossModuleReferenceInfo(modules)
@@ -102,7 +106,8 @@ class IrModuleToJsTransformer(
             val dependencies = others.mapIndexed { index, module ->
                 val moduleName = module.externalModuleName()
 
-                val exportedDeclarations = ExportModelGenerator(backendContext).let { module.files.flatMap { file -> it.generateExport(file) } }
+                val exportedDeclarations =
+                    ExportModelGenerator(backendContext).let { module.files.flatMap { file -> it.generateExport(file) } }
 
                 moduleName to generateWrappedModuleBody2(
                     listOf(module),
@@ -161,11 +166,18 @@ class IrModuleToJsTransformer(
         val globalThisDeclaration = jsGlobalThisPolyfill();
 
         val globalNames = NameTable<String>(namer.globalNames)
-        val exportStatements = ExportModelToJsStatements(internalModuleName, nameGenerator, { globalNames.declareFreshName(it, it)}).generateModuleExport(exportedModule)
+        val exportStatements =
+            ExportModelToJsStatements(internalModuleName, nameGenerator, { globalNames.declareFreshName(it, it) }).generateModuleExport(
+                exportedModule
+            )
 
         val callToMain = generateCallToMain(modules, rootContext)
 
-        val (crossModuleImports, importedKotlinModules) = generateCrossModuleImports(nameGenerator, modules, dependencies, { JsName(sanitizeName(it)) })
+        val (crossModuleImports, importedKotlinModules) = generateCrossModuleImports(
+            nameGenerator,
+            modules,
+            dependencies,
+            { JsName(sanitizeName(it)) })
         val crossModuleExports = generateCrossModuleExports(modules, refInfo, internalModuleName)
 
         val program = JsProgram()
@@ -233,7 +245,7 @@ class IrModuleToJsTransformer(
         return CompilationOutputs(
             jsCode.toString(),
             program,
-            if(sourceMapsEnabled) sourceMapBuilder.build() else null
+            if (sourceMapsEnabled) sourceMapBuilder.build() else null
         )
     }
 
@@ -394,7 +406,7 @@ class IrModuleToJsTransformer(
 
             assert(jsModule != null || jsQualifier != null)
 
-            val qualifiedReference: JsNameRef
+            val qualifiedReference: JsExpression
 
             if (jsModule != null) {
                 val internalName = declareFreshGlobal("\$module\$$jsModule")
@@ -404,7 +416,7 @@ class IrModuleToJsTransformer(
                     if (jsQualifier == null)
                         internalName.makeRef()
                     else
-                        JsNameRef(jsQualifier, internalName.makeRef())
+                        JsNameRef(JsName(jsQualifier), internalName.makeRef())
             } else {
                 qualifiedReference = JsNameRef(jsQualifier!!)
             }
@@ -416,7 +428,12 @@ class IrModuleToJsTransformer(
                 .forEach { declaration ->
                     val declName = getNameForExternalDeclaration(declaration)
                     importStatements.add(
-                        JsVars(JsVars.JsVar(declName, JsNameRef(declaration.getJsNameOrKotlinName().identifier, qualifiedReference)))
+                        JsVars(
+                            JsVars.JsVar(
+                                declName,
+                                jsElementAccess(declaration.getJsNameOrKotlinName().identifier, qualifiedReference)
+                            )
+                        )
                     )
                 }
         }
