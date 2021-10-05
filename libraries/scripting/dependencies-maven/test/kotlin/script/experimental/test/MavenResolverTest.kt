@@ -9,6 +9,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert
 import org.junit.Ignore
 import java.io.File
+import java.nio.file.Files
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
@@ -24,6 +25,13 @@ import kotlin.script.experimental.dependencies.maven.MavenDependenciesResolver
 
 @ExperimentalContracts
 class MavenResolverTest : ResolversTestBase() {
+    private val tempResolveDir = Files.createTempDirectory("kotlin-scripting-maven-test").toFile()
+
+    override fun tearDown() {
+        tempResolveDir.deleteRecursively()
+    }
+
+    private fun createResolver() = MavenDependenciesResolver(tempResolveDir)
 
     private fun resolveAndCheck(
         coordinates: String,
@@ -33,7 +41,7 @@ class MavenResolverTest : ResolversTestBase() {
         contract {
             callsInPlace(checkBody, InvocationKind.EXACTLY_ONCE)
         }
-        val resolver = MavenDependenciesResolver()
+        val resolver = createResolver()
         val result = runBlocking { resolver.resolve(coordinates, options) }
         if (result is ResultWithDiagnostics.Failure) {
             Assert.fail(result.reports.joinToString("\n") { it.exception?.toString() ?: it.message })
@@ -112,7 +120,7 @@ class MavenResolverTest : ResolversTestBase() {
     // TODO: find a way to enable it back
     @Ignore
     fun ignore_testAuth() {
-        val resolver = MavenDependenciesResolver()
+        val resolver = createResolver()
         val options = buildOptions(
             DependenciesResolverOptionsName.USERNAME to "<FirstName.LastName>",
             DependenciesResolverOptionsName.PASSWORD to "<Space token>",
@@ -128,7 +136,7 @@ class MavenResolverTest : ResolversTestBase() {
     // TODO: find a way to enable it back
     @Ignore
     fun ignore_testCustomRepositoryId() {
-        val resolver = MavenDependenciesResolver()
+        val resolver = createResolver()
         resolver.addRepository("https://repo.osgeo.org/repository/release/")
         val files = runBlocking {
             resolver.resolve("org.geotools:gt-shapefile:[23,)")
@@ -162,11 +170,11 @@ class MavenResolverTest : ResolversTestBase() {
         val annotationsWithDependsOnFirst = listOf(dependsOn, repositories)
 
         val filesWithReposFirst = runBlocking {
-            MavenDependenciesResolver().resolveFromAnnotations(annotationsWithReposFirst)
+            createResolver().resolveFromAnnotations(annotationsWithReposFirst)
         }.valueOrThrow()
 
         val filesWithDependsOnFirst = runBlocking {
-            MavenDependenciesResolver().resolveFromAnnotations(annotationsWithDependsOnFirst)
+            createResolver().resolveFromAnnotations(annotationsWithDependsOnFirst)
         }.valueOrThrow()
 
         // Tests that the jar was resolved

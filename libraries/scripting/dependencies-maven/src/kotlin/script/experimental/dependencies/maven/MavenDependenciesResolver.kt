@@ -33,7 +33,10 @@ class MavenRepositoryCoordinates(
     val passPhrase: String?
 ) : RepositoryCoordinates(url)
 
-class MavenDependenciesResolver : ExternalDependenciesResolver {
+class MavenDependenciesResolver(
+    // TODO: make robust
+    val localRepo: File = File(File(System.getProperty("user.home")!!, ".m2"), "repository")
+) : ExternalDependenciesResolver {
 
     override fun acceptsArtifact(artifactCoordinates: String): Boolean =
         artifactCoordinates.toMavenArtifact() != null
@@ -41,9 +44,6 @@ class MavenDependenciesResolver : ExternalDependenciesResolver {
     override fun acceptsRepository(repositoryCoordinates: RepositoryCoordinates): Boolean {
         return repositoryCoordinates.toRepositoryUrlOrNull() != null
     }
-
-    // TODO: make robust
-    val localRepo = File(File(System.getProperty("user.home")!!, ".m2"), "repository")
 
     val repos: ArrayList<RemoteRepository> = arrayListOf()
 
