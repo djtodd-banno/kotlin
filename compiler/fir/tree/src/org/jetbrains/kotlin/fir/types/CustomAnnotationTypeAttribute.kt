@@ -25,6 +25,25 @@ class CustomAnnotationTypeAttribute(val annotations: List<FirAnnotation>) : Cone
 
     override val key: KClass<out CustomAnnotationTypeAttribute>
         get() = CustomAnnotationTypeAttribute::class
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as CustomAnnotationTypeAttribute
+
+        // Order of annotations should not matter
+        // We are using toString() because FIR elements do not implement equals() or hashCode()
+        return annotations.size == other.annotations.size &&
+                annotations.map { it.toString() }.containsAll(other.annotations.map { it.toString() })
+    }
+
+    override fun hashCode(): Int {
+        // Adding up annotation (.toString()) hash codes because order should not matter
+        var result = 0
+        annotations.map { it.toString() }.forEach { result += it.hashCode() }
+        return result
+    }
 }
 
 private val ConeAttributes.custom: CustomAnnotationTypeAttribute? by ConeAttributes.attributeAccessor<CustomAnnotationTypeAttribute>()

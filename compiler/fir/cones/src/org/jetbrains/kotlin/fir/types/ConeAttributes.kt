@@ -29,6 +29,8 @@ abstract class ConeAttribute<T : ConeAttribute<T>> : AnnotationMarker {
     abstract fun isSubtypeOf(other: @UnsafeVariance T?): Boolean
 
     abstract override fun toString(): String
+    abstract override fun equals(other: Any?): Boolean
+    abstract override fun hashCode(): Int
 
     abstract val key: KClass<out T>
 }
@@ -117,4 +119,21 @@ class ConeAttributes private constructor(attributes: List<ConeAttribute<*>>) : A
 
     override val typeRegistry: TypeRegistry<ConeAttribute<*>, ConeAttribute<*>>
         get() = Companion
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ConeAttributes
+
+        // Order of attributes should not matter
+        return arrayMap.size == other.arrayMap.size && arrayMap.all { it in other.arrayMap }
+    }
+
+    override fun hashCode(): Int {
+        // Adding up attribute hash codes because order should not matter
+        var result = 0
+        arrayMap.forEach { result += it.hashCode() }
+        return result
+    }
 }

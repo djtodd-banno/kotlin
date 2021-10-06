@@ -220,6 +220,7 @@ data class ConeCapturedType(
         result = 31 * result + constructor.typeParameterMarker.hashCode()
         result = 31 * result + captureStatus.hashCode()
         result = 31 * result + nullability.hashCode()
+        result = 31 * result + attributes.hashCode()
         return result
     }
 }

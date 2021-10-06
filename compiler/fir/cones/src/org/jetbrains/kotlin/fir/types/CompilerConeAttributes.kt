@@ -24,6 +24,8 @@ object CompilerConeAttributes {
         override val key: KClass<out Exact> = Exact::class
 
         override fun toString(): String = "@Exact"
+        override fun equals(other: Any?): Boolean = this === other
+        override fun hashCode(): Int = System.identityHashCode(this)
     }
 
     object NoInfer : ConeAttribute<NoInfer>() {
@@ -37,6 +39,8 @@ object CompilerConeAttributes {
         override val key: KClass<out NoInfer> = NoInfer::class
 
         override fun toString(): String = "@NoInfer"
+        override fun equals(other: Any?): Boolean = this === other
+        override fun hashCode(): Int = System.identityHashCode(this)
     }
 
     object EnhancedNullability : ConeAttribute<EnhancedNullability>() {
@@ -51,6 +55,8 @@ object CompilerConeAttributes {
         override val key: KClass<out EnhancedNullability> = EnhancedNullability::class
 
         override fun toString(): String = "@EnhancedNullability"
+        override fun equals(other: Any?): Boolean = this === other
+        override fun hashCode(): Int = System.identityHashCode(this)
     }
 
     object ExtensionFunctionType : ConeAttribute<ExtensionFunctionType>() {
@@ -65,6 +71,8 @@ object CompilerConeAttributes {
         override val key: KClass<out ExtensionFunctionType> = ExtensionFunctionType::class
 
         override fun toString(): String = "@ExtensionFunctionType"
+        override fun equals(other: Any?): Boolean = this === other
+        override fun hashCode(): Int = System.identityHashCode(this)
     }
 
     object UnsafeVariance : ConeAttribute<UnsafeVariance>() {
@@ -79,6 +87,8 @@ object CompilerConeAttributes {
         override val key: KClass<out UnsafeVariance> = UnsafeVariance::class
 
         override fun toString(): String = "@UnsafeVariance"
+        override fun equals(other: Any?): Boolean = this === other
+        override fun hashCode(): Int = System.identityHashCode(this)
     }
 
     val compilerAttributeByClassId: Map<ClassId, ConeAttribute<*>> = mapOf(
