@@ -3347,6 +3347,11 @@ public class BoxJsTestGenerated extends AbstractBoxJsTest {
             runTest("js/js.translator/testData/box/extensionFunction/intExtension.kt");
         }
 
+        @TestMetadata("KT-47806.kt")
+        public void testKT_47806() throws Exception {
+            runTest("js/js.translator/testData/box/extensionFunction/KT-47806.kt");
+        }
+
         @TestMetadata("superClassMemberInExtension.kt")
         public void testSuperClassMemberInExtension() throws Exception {
             runTest("js/js.translator/testData/box/extensionFunction/superClassMemberInExtension.kt");
