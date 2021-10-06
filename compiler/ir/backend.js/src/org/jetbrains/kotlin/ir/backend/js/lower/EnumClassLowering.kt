@@ -174,10 +174,9 @@ class EnumClassConstructorBodyTransformer(val context: JsCommonBackendContext) :
                 }
 
                 irClass.correspondingEntry?.let { enumEntry ->
-                    val parent = enumEntry.parent as? IrClass ?: irClass
                     // Lower `IrEnumConstructorCall`s inside of enum entry class constructors to corresponding `IrDelegatingConstructorCall`s.
                     // Add `name` and `ordinal` parameters.
-                    lowerEnumEntryClassConstructors(parent, enumEntry, container)
+                    lowerEnumEntryClassConstructors(enumEntry.parentAsClass, enumEntry, container)
                 }
             }
 
