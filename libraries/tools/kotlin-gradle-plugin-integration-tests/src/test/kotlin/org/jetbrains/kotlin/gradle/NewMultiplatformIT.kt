@@ -1422,28 +1422,28 @@ class NewMultiplatformIT : BaseGradleIT() {
         setupWorkingDir()
         // Check that output directories of Kotlin compilations are registered for Gradle stale outputs cleanup.
         // One way to check that is to run a Gradle build with no Gradle history (no .gradle directory) and see that the compilation
-        // output directories are cleaned up, even those outside the project's buildDir
+        // output directories are cleaned up
 
         gradleBuildScript().appendText(
             "\n" + """
-            kotlin.targets.js.compilations.main.output.classesDirs.from("foo") // should affect Gradle's behavior wrt stale output cleanup
+            kotlin.targets.js.compilations.main.output.classesDirs.from("build/foo") // should affect Gradle's behavior wrt stale output cleanup
             task('foo') {
-                outputs.dir("foo")
+                outputs.dir("build/foo")
                 doFirst {
                     println 'hello'
-                    file("foo/2.txt").text = System.currentTimeMillis()
+                    file("build/foo/2.txt").text = System.currentTimeMillis()
                 }
             }
             """.trimIndent()
         )
 
-        val staleFilePath = "foo/1.txt"
+        val staleFilePath = "build/foo/1.txt"
         projectDir.resolve(staleFilePath).run { parentFile.mkdirs(); createNewFile() }
 
         build("foo") {
             assertSuccessful()
             assertNoSuchFile(staleFilePath)
-            assertFileExists("foo/2.txt")
+            assertFileExists("build/foo/2.txt")
         }
     }
 
