@@ -16361,6 +16361,12 @@ public class FirBlackBoxCodegenTestGenerated extends AbstractFirBlackBoxCodegenT
         }
 
         @Test
+        @TestMetadata("notFoundClasses.kt")
+        public void testNotFoundClasses() throws Exception {
+            runTest("compiler/testData/codegen/box/fir/notFoundClasses.kt");
+        }
+
+        @Test
         @TestMetadata("SamWithReceiverMavenProjectImportHandler.kt")
         public void testSamWithReceiverMavenProjectImportHandler() throws Exception {
             runTest("compiler/testData/codegen/box/fir/SamWithReceiverMavenProjectImportHandler.kt");
