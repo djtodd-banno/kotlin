@@ -1468,16 +1468,6 @@ public class IrBoxJsTestGenerated extends AbstractIrBoxJsTest {
             runTest("js/js.translator/testData/box/enum/initializationOrder.kt");
         }
 
-        @TestMetadata("KT-45056.kt")
-        public void testKT_45056() throws Exception {
-            runTest("js/js.translator/testData/box/enum/KT-45056.kt");
-        }
-
-        @TestMetadata("KT-47516.kt")
-        public void testKT_47516() throws Exception {
-            runTest("js/js.translator/testData/box/enum/KT-47516.kt");
-        }
-
         @TestMetadata("nativeEnum.kt")
         public void testNativeEnum() throws Exception {
             runTest("js/js.translator/testData/box/enum/nativeEnum.kt");
