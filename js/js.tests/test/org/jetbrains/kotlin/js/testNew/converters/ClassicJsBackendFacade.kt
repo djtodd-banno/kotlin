@@ -93,6 +93,6 @@ class ClassicJsBackendFacade(
             FileUtil.writeToFile(outputFile, wrappedContent)
         }
 
-        return BinaryArtifacts.OldJsArtifact(outputFile, translationResult.program)
+        return BinaryArtifacts.Js.OldJsArtifact(outputFile, translationResult.program)
     }
 }

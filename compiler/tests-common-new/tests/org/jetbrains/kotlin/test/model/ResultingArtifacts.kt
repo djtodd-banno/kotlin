@@ -20,11 +20,11 @@ object BinaryArtifacts {
         abstract val outputFile: File
         override val kind: BinaryKind<Js>
             get() = ArtifactKinds.Js
+
+        class OldJsArtifact(override val outputFile: File, val jsProgram: JsProgram) : Js()
+
+        class JsIrArtifact(override val outputFile: File, val compilerResult: CompilerResult) : Js()
     }
-
-    class OldJsArtifact(override val outputFile: File, val jsProgram: JsProgram) : Js()
-
-    class JsIrArtifact(override val outputFile: File, val compilerResult: CompilerResult) : Js()
 
     class Native : ResultingArtifact.Binary<Native>() {
         override val kind: BinaryKind<Native>
