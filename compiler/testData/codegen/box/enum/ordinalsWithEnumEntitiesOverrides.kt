@@ -1,4 +1,8 @@
+// WITH_RUNTIME
+
 package foo
+
+import kotlin.test.assertEquals
 
 enum class TestA {
     FIRST {
