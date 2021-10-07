@@ -6,10 +6,7 @@
 package org.jetbrains.kotlin.js.testNew
 
 import org.jetbrains.kotlin.js.testNew.converters.ClassicJsBackendFacade
-import org.jetbrains.kotlin.js.testNew.handlers.JsAstHandler
-import org.jetbrains.kotlin.js.testNew.handlers.JsPrefixPostfixHandler
-import org.jetbrains.kotlin.js.testNew.handlers.JsSourceMapHandler
-import org.jetbrains.kotlin.js.testNew.handlers.JsWrongModuleHandler
+import org.jetbrains.kotlin.js.testNew.handlers.*
 import org.jetbrains.kotlin.test.Constructor
 import org.jetbrains.kotlin.test.TargetBackend
 import org.jetbrains.kotlin.test.backend.classic.ClassicBackendInput
@@ -42,6 +39,7 @@ abstract class AbstractJsTest(
         with(builder) {
             configureJsArtifactsHandlersStep {
                 useHandlers(
+                    ::JsTranslationResultHandler,
                     ::JsAstHandler,
                     ::JsSourceMapHandler,
                 )

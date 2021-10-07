@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.js.backend.ast.JsExpressionStatement
 import org.jetbrains.kotlin.js.backend.ast.JsNullLiteral
 import org.jetbrains.kotlin.js.backend.ast.JsProgram
 import org.jetbrains.kotlin.js.backend.ast.RecursiveJsVisitor
+import org.jetbrains.kotlin.js.facade.TranslationResult
 import org.jetbrains.kotlin.js.facade.TranslationUnit
 import org.jetbrains.kotlin.js.test.utils.DirectiveTestUtils
 import org.jetbrains.kotlin.test.TargetBackend
@@ -24,9 +25,9 @@ class JsAstHandler(testServices: TestServices) : JsBinaryArtifactHandler(testSer
 
     override fun processModule(module: TestModule, info: BinaryArtifacts.Js) {
         val ktFiles = module.files.filter { it.isKtFile }.map { it.originalContent }
-        val program = (info as? BinaryArtifacts.Js.OldJsArtifact)?.jsProgram
-            ?: throw AssertionError("JsBoxRunner suppose to work only with old js backend")
-        processJsProgram(program, ktFiles, module.targetBackend!!)
+        val result = (info as? BinaryArtifacts.Js.OldJsArtifact)?.translationResult
+            ?: throw IllegalArgumentException("JsBoxRunner suppose to work only with old js backend")
+        processJsProgram((result as TranslationResult.Success).program, ktFiles, module.targetBackend!!)
     }
 
     companion object {

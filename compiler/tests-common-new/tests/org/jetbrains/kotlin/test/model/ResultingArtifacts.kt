@@ -8,6 +8,7 @@ package org.jetbrains.kotlin.test.model
 import org.jetbrains.kotlin.codegen.ClassFileFactory
 import org.jetbrains.kotlin.ir.backend.js.CompilerResult
 import org.jetbrains.kotlin.js.backend.ast.JsProgram
+import org.jetbrains.kotlin.js.facade.TranslationResult
 import java.io.File
 
 object BinaryArtifacts {
@@ -21,7 +22,7 @@ object BinaryArtifacts {
         override val kind: BinaryKind<Js>
             get() = ArtifactKinds.Js
 
-        class OldJsArtifact(override val outputFile: File, val jsProgram: JsProgram) : Js()
+        class OldJsArtifact(override val outputFile: File, val translationResult: TranslationResult) : Js()
 
         class JsIrArtifact(override val outputFile: File, val compilerResult: CompilerResult) : Js()
     }

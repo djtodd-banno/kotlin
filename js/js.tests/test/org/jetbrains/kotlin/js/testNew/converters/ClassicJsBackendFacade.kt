@@ -72,16 +72,11 @@ class ClassicJsBackendFacade(
             JsEnvironmentConfigurator.Companion.ExceptionThrowingReporter, units, mainCallParameters, analysisResult as? JsAnalysisResult
         )
 
-        // TODO is this correct way to report errors?
+        val outputFile = File(JsEnvironmentConfigurator.getJsModuleArtifactPath(testServices, module.name) + ".js")
         if (translationResult !is TranslationResult.Success) {
-            val outputStream = ByteArrayOutputStream()
-            val collector = PrintingMessageCollector(PrintStream(outputStream), MessageRenderer.PLAIN_FULL_PATHS, true)
-            AnalyzerWithCompilerReport.reportDiagnostics(translationResult.diagnostics, collector)
-            val messages = outputStream.toByteArray().toString(Charset.forName("UTF-8"))
-            throw AssertionError("The following errors occurred compiling test:\n$messages")
+            return BinaryArtifacts.Js.OldJsArtifact(outputFile, translationResult)
         }
 
-        val outputFile = File(JsEnvironmentConfigurator.getJsModuleArtifactPath(testServices, module.name) + ".js")
         val outputPrefixFile = JsEnvironmentConfigurator.getPrefixFile(module)
         val outputPostfixFile = JsEnvironmentConfigurator.getPostfixFile(module)
         val outputFiles = translationResult.getOutputFiles(outputFile, outputPrefixFile, outputPostfixFile)
@@ -93,6 +88,6 @@ class ClassicJsBackendFacade(
             FileUtil.writeToFile(outputFile, wrappedContent)
         }
 
-        return BinaryArtifacts.Js.OldJsArtifact(outputFile, translationResult.program)
+        return BinaryArtifacts.Js.OldJsArtifact(outputFile, translationResult)
     }
 }

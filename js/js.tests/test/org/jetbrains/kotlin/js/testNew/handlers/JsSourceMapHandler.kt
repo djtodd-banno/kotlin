@@ -8,6 +8,7 @@ package org.jetbrains.kotlin.js.testNew.handlers
 import com.google.gwt.dev.js.ThrowExceptionOnErrorReporter
 import org.jetbrains.kotlin.js.backend.JsToStringGenerationVisitor
 import org.jetbrains.kotlin.js.backend.ast.*
+import org.jetbrains.kotlin.js.facade.TranslationResult
 import org.jetbrains.kotlin.js.parser.parse
 import org.jetbrains.kotlin.js.parser.sourcemaps.SourceMapError
 import org.jetbrains.kotlin.js.parser.sourcemaps.SourceMapLocationRemapper
@@ -33,10 +34,10 @@ class JsSourceMapHandler(testServices: TestServices) : JsBinaryArtifactHandler(t
 
     override fun processModule(module: TestModule, info: BinaryArtifacts.Js) {
         val outputFile = File(JsEnvironmentConfigurator.getJsModuleArtifactPath(testServices, module.name))
-        val program = (info as? BinaryArtifacts.Js.OldJsArtifact)?.jsProgram
-            ?: throw AssertionError("JsBoxRunner suppose to work only with old js backend")
+        val result = (info as? BinaryArtifacts.Js.OldJsArtifact)?.translationResult
+            ?: throw IllegalArgumentException("JsBoxRunner suppose to work only with old js backend")
         val remap = JsEnvironmentConfigurationDirectives.SKIP_SOURCEMAP_REMAPPING !in module.directives
-        checkSourceMap(outputFile, program, remap) { expected, actual ->
+        checkSourceMap(outputFile, (result as TranslationResult.Success).program, remap) { expected, actual ->
             testServices.assertions.assertEquals(expected, actual)
         }
     }

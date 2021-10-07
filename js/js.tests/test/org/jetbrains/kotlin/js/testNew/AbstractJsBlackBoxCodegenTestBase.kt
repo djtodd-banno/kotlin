@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.test.TargetBackend
 import org.jetbrains.kotlin.test.backend.BlackBoxCodegenSuppressor
 import org.jetbrains.kotlin.test.builders.TestConfigurationBuilder
 import org.jetbrains.kotlin.test.builders.classicFrontendHandlersStep
+import org.jetbrains.kotlin.test.builders.irHandlersStep
 import org.jetbrains.kotlin.test.builders.jsArtifactsHandlersStep
 import org.jetbrains.kotlin.test.directives.JsEnvironmentConfigurationDirectives
 import org.jetbrains.kotlin.test.frontend.classic.handlers.ClassicDiagnosticsHandler
@@ -54,15 +55,6 @@ abstract class AbstractJsBlackBoxCodegenTestBase<R : ResultingArtifact.FrontendO
             if (skipMinification) +JsEnvironmentConfigurationDirectives.SKIP_MINIFICATION
         }
 
-        facadeStep(frontendFacade)
-        facadeStep(frontendToBackendConverter)
-        facadeStep(backendFacade)
-
-        classicFrontendHandlersStep {
-            commonClassicFrontendHandlersForCodegenTest()
-            useHandlers(::ClassicDiagnosticsHandler)
-        }
-
         useConfigurators(
             ::CommonEnvironmentConfigurator,
             ::JsEnvironmentConfigurator,
@@ -78,6 +70,16 @@ abstract class AbstractJsBlackBoxCodegenTestBase<R : ResultingArtifact.FrontendO
             ::BlackBoxCodegenSuppressor,
         )
 
+        facadeStep(frontendFacade)
+        classicFrontendHandlersStep {
+            commonClassicFrontendHandlersForCodegenTest()
+            useHandlers(::ClassicDiagnosticsHandler)
+        }
+
+        facadeStep(frontendToBackendConverter)
+        irHandlersStep()
+
+        facadeStep(backendFacade)
         jsArtifactsHandlersStep {
             useHandlers(
                 ::JsBoxRunner,
