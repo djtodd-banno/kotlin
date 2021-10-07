@@ -30,7 +30,12 @@ public data class KtTypeRendererOptions(
      * When `true` will render as `UnresolvedQualifier`
      * When `false` will render as "ERROR_TYPE <symbol not found for UnresolvedQualifier>"
      */
-    public val renderUnresolvedTypeAsResolved: Boolean = true
+    public val renderUnresolvedTypeAsResolved: Boolean = true,
+
+    /**
+     * If true captured types are rendered. Otherwise they are rendered as error type.
+     */
+    public val renderCapturedType: Boolean = false
 ) {
     public companion object {
         public val DEFAULT: KtTypeRendererOptions = KtTypeRendererOptions()
