@@ -936,6 +936,12 @@ public class JsCodegenInlineTestGenerated extends AbstractJsCodegenInlineTest {
             }
 
             @Test
+            @TestMetadata("doubleBoundToThis.kt")
+            public void testDoubleBoundToThis() throws Exception {
+                runTest("compiler/testData/codegen/boxInline/callableReference/bound/doubleBoundToThis.kt");
+            }
+
+            @Test
             @TestMetadata("emptyLhsFunction.kt")
             public void testEmptyLhsFunction() throws Exception {
                 runTest("compiler/testData/codegen/boxInline/callableReference/bound/emptyLhsFunction.kt");
@@ -2306,6 +2312,12 @@ public class JsCodegenInlineTestGenerated extends AbstractJsCodegenInlineTest {
         @TestMetadata("fakeOverride.kt")
         public void testFakeOverride() throws Exception {
             runTest("compiler/testData/codegen/boxInline/innerClasses/fakeOverride.kt");
+        }
+
+        @Test
+        @TestMetadata("innerInlineFunCapturesOuter.kt")
+        public void testInnerInlineFunCapturesOuter() throws Exception {
+            runTest("compiler/testData/codegen/boxInline/innerClasses/innerInlineFunCapturesOuter.kt");
         }
     }
 
@@ -4290,6 +4302,12 @@ public class JsCodegenInlineTestGenerated extends AbstractJsCodegenInlineTest {
         @TestMetadata("inlineOrdinaryOfNoinlineSuspend.kt")
         public void testInlineOrdinaryOfNoinlineSuspend() throws Exception {
             runTest("compiler/testData/codegen/boxInline/suspend/inlineOrdinaryOfNoinlineSuspend.kt");
+        }
+
+        @Test
+        @TestMetadata("inlinePassthrough.kt")
+        public void testInlinePassthrough() throws Exception {
+            runTest("compiler/testData/codegen/boxInline/suspend/inlinePassthrough.kt");
         }
 
         @Test

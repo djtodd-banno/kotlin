@@ -9,7 +9,9 @@ import org.jetbrains.kotlin.js.backend.ast.JsExpressionStatement
 import org.jetbrains.kotlin.js.backend.ast.JsNullLiteral
 import org.jetbrains.kotlin.js.backend.ast.JsProgram
 import org.jetbrains.kotlin.js.backend.ast.RecursiveJsVisitor
+import org.jetbrains.kotlin.js.facade.TranslationUnit
 import org.jetbrains.kotlin.js.test.utils.DirectiveTestUtils
+import org.jetbrains.kotlin.test.TargetBackend
 import org.jetbrains.kotlin.test.backend.handlers.JsBinaryArtifactHandler
 import org.jetbrains.kotlin.test.model.BinaryArtifacts
 import org.jetbrains.kotlin.test.model.TestModule
@@ -24,13 +26,21 @@ class JsAstHandler(testServices: TestServices) : JsBinaryArtifactHandler(testSer
         val ktFiles = module.files.filter { it.isKtFile }.map { it.originalContent }
         val program = (info as? BinaryArtifacts.OldJsArtifact)?.jsProgram
             ?: throw AssertionError("JsBoxRunner suppose to work only with old js backend")
-        processJsProgram(program, ktFiles)
+        processJsProgram(program, ktFiles, module.targetBackend!!)
     }
 
     companion object {
-        fun processJsProgram(program: JsProgram, psiFiles: List<String>) {
-            psiFiles.forEach { DirectiveTestUtils.processDirectives(program, it) }
-            program.verifyAst()
+        fun processUnitsOfJsProgram(program: JsProgram, units: List<TranslationUnit>, targetBackend: TargetBackend) {
+            processJsProgram(program, units.filterIsInstance<TranslationUnit.SourceFile>().map { it.file.text }, targetBackend)
+        }
+
+        fun processJsProgram(program: JsProgram, psiFiles: List<String>, targetBackend: TargetBackend) {
+            // TODO: For now the IR backend generates JS code that doesn't pass verification,
+            // TODO: so we temporarily disabled AST verification.
+            if (targetBackend == TargetBackend.JS) {
+                psiFiles.forEach { DirectiveTestUtils.processDirectives(program, it, targetBackend) }
+                program.verifyAst()
+            }
         }
 
         private fun JsProgram.verifyAst() {

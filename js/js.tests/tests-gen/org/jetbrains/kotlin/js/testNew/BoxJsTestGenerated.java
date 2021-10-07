@@ -3432,6 +3432,12 @@ public class BoxJsTestGenerated extends AbstractBoxJsTest {
             }
 
             @Test
+            @TestMetadata("constantsInWhen.kt")
+            public void testConstantsInWhen() throws Exception {
+                runTest("js/js.translator/testData/box/expression/when/constantsInWhen.kt");
+            }
+
+            @Test
             @TestMetadata("doWhileWithOneStmWhen.kt")
             public void testDoWhileWithOneStmWhen() throws Exception {
                 runTest("js/js.translator/testData/box/expression/when/doWhileWithOneStmWhen.kt");
@@ -5727,6 +5733,18 @@ public class BoxJsTestGenerated extends AbstractBoxJsTest {
         }
 
         @Test
+        @TestMetadata("literalInVal.kt")
+        public void testLiteralInVal() throws Exception {
+            runTest("js/js.translator/testData/box/jsCode/literalInVal.kt");
+        }
+
+        @Test
+        @TestMetadata("literalInValField.kt")
+        public void testLiteralInValField() throws Exception {
+            runTest("js/js.translator/testData/box/jsCode/literalInValField.kt");
+        }
+
+        @Test
         @TestMetadata("numberLiteralOverflow.kt")
         public void testNumberLiteralOverflow() throws Exception {
             runTest("js/js.translator/testData/box/jsCode/numberLiteralOverflow.kt");
@@ -6698,6 +6716,12 @@ public class BoxJsTestGenerated extends AbstractBoxJsTest {
         @TestMetadata("jsNameAndPrivate.kt")
         public void testJsNameAndPrivate() throws Exception {
             runTest("js/js.translator/testData/box/nameClashes/jsNameAndPrivate.kt");
+        }
+
+        @Test
+        @TestMetadata("jsQualifier.kt")
+        public void testJsQualifier() throws Exception {
+            runTest("js/js.translator/testData/box/nameClashes/jsQualifier.kt");
         }
 
         @Test
@@ -7756,6 +7780,12 @@ public class BoxJsTestGenerated extends AbstractBoxJsTest {
         @TestMetadata("checkSupertypeOrder.kt")
         public void testCheckSupertypeOrder() throws Exception {
             runTest("js/js.translator/testData/box/propertyOverride/checkSupertypeOrder.kt");
+        }
+
+        @Test
+        @TestMetadata("exportedBaseClass.kt")
+        public void testExportedBaseClass() throws Exception {
+            runTest("js/js.translator/testData/box/propertyOverride/exportedBaseClass.kt");
         }
 
         @Test
@@ -8864,6 +8894,12 @@ public class BoxJsTestGenerated extends AbstractBoxJsTest {
         @TestMetadata("jsExternalVarargFun.kt")
         public void testJsExternalVarargFun() throws Exception {
             runTest("js/js.translator/testData/box/vararg/jsExternalVarargFun.kt");
+        }
+
+        @Test
+        @TestMetadata("jsExternalVarargSuspend.kt")
+        public void testJsExternalVarargSuspend() throws Exception {
+            runTest("js/js.translator/testData/box/vararg/jsExternalVarargSuspend.kt");
         }
     }
 }

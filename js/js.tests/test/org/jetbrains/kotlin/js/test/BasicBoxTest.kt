@@ -683,7 +683,7 @@ abstract class BasicBoxTest(
             incrementalData.header = incrementalService.headerMetadata
         }
 
-        JsAstHandler.processJsProgram(translationResult.program, units.filterIsInstance<TranslationUnit.SourceFile>().map { it.file.text })
+        JsAstHandler.processUnitsOfJsProgram(translationResult.program, units, targetBackend)
         JsSourceMapHandler.checkSourceMap(outputFile, translationResult.program, remap) { expected, actual ->
             TestCase.assertEquals(expected, actual)
         }

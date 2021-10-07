@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.js.config.JsConfig
 import org.jetbrains.kotlin.js.config.RuntimeDiagnostic
 import org.jetbrains.kotlin.js.facade.MainCallParameters
 import org.jetbrains.kotlin.js.facade.TranslationUnit
+import org.jetbrains.kotlin.js.testNew.handlers.JsAstHandler
 import org.jetbrains.kotlin.konan.properties.propertyList
 import org.jetbrains.kotlin.library.KLIB_PROPERTY_DEPENDS
 import org.jetbrains.kotlin.library.KotlinAbiVersion
@@ -348,7 +349,7 @@ abstract class BasicIrBoxTest(
                     dtsFile.write(compiledModule.tsDefinitions ?: error("No ts definitions"))
                 }
 
-                compiledOutput.jsProgram?.let { processJsProgram(it, units) }
+                compiledOutput.jsProgram?.let { JsAstHandler.processUnitsOfJsProgram(it, units, targetBackend = TargetBackend.JS_IR) }
             }
 
             if (runIrPir) {
@@ -370,7 +371,7 @@ abstract class BasicIrBoxTest(
                     verifySignatures = !skipMangleVerification,
                 )
                 compiledModule.outputs!!.writeTo(pirOutputFile, config)
-                processJsProgram(compiledModule.outputs!!.jsProgram!!, units)
+                JsAstHandler.processUnitsOfJsProgram(compiledModule.outputs!!.jsProgram!!, units, targetBackend = TargetBackend.JS_IR)
             }
         }
     }
