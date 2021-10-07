@@ -38,8 +38,6 @@ class JsEnvironmentConfigurator(testServices: TestServices) : EnvironmentConfigu
         const val TEST_DATA_DIR_PATH = "js/js.translator/testData"
         const val OLD_MODULE_SUFFIX = "_old"
 
-        const val TEST_FUNCTION = "box"
-
         private const val OUTPUT_DIR_NAME = "outputDir"
         private const val DCE_OUTPUT_DIR_NAME = "dceOutputDir"
         private const val PIR_OUTPUT_DIR_NAME = "pirOutputDir"

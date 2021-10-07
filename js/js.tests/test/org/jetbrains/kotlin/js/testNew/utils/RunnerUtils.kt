@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.js.JavaScript
 import org.jetbrains.kotlin.js.config.JSConfigurationKeys
 import org.jetbrains.kotlin.js.test.*
 import org.jetbrains.kotlin.js.testNew.JsAdditionalSourceProvider
+import org.jetbrains.kotlin.js.testNew.handlers.JsBoxRunner.Companion.TEST_FUNCTION
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.serialization.js.ModuleKind
 import org.jetbrains.kotlin.test.TargetBackend
@@ -20,7 +21,6 @@ import org.jetbrains.kotlin.test.model.TestFile
 import org.jetbrains.kotlin.test.model.TestModule
 import org.jetbrains.kotlin.test.services.*
 import org.jetbrains.kotlin.test.services.configuration.JsEnvironmentConfigurator
-import org.jetbrains.kotlin.test.services.configuration.JsEnvironmentConfigurator.Companion.TEST_FUNCTION
 import java.io.File
 
 private const val MODULE_EMULATION_FILE = "${JsEnvironmentConfigurator.TEST_DATA_DIR_PATH}/moduleEmulation.js"

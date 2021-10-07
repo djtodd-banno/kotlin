@@ -36,7 +36,7 @@ class JsMinifierRunner(testServices: TestServices) : AbstractJsArtifactsCollecto
         val withModuleSystem = testWithModuleSystem(testServices)
         val testModuleName = getTestModuleName(testServices)
         val testPackage = extractTestPackage(testServices)
-        val testFunction = JsEnvironmentConfigurator.TEST_FUNCTION
+        val testFunction = JsBoxRunner.TEST_FUNCTION
 
         val dontSkipMinification = JsEnvironmentConfigurationDirectives.SKIP_MINIFICATION !in globalDirectives
         val runMinifierByDefault = JsEnvironmentConfigurationDirectives.RUN_MINIFIER_BY_DEFAULT in globalDirectives

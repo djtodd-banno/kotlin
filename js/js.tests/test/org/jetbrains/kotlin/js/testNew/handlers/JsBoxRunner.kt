@@ -47,10 +47,11 @@ class JsBoxRunner(testServices: TestServices) : AbstractJsArtifactsCollector(tes
 
     private fun runGeneratedCode(jsFiles: List<String>, testModuleName: String?, testPackage: String?, withModuleSystem: Boolean) {
         getTestChecker(testServices)
-            .check(jsFiles, testModuleName, testPackage, JsEnvironmentConfigurator.TEST_FUNCTION, DEFAULT_EXPECTED_RESULT, withModuleSystem)
+            .check(jsFiles, testModuleName, testPackage, TEST_FUNCTION, DEFAULT_EXPECTED_RESULT, withModuleSystem)
     }
 
     companion object {
         const val DEFAULT_EXPECTED_RESULT = "OK"
+        const val TEST_FUNCTION = "box"
     }
 }
