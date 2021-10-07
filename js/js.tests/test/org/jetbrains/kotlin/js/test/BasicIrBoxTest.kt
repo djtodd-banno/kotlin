@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.parsing.parseBoolean
 import org.jetbrains.kotlin.test.TargetBackend
 import org.jetbrains.kotlin.util.DummyLogger
 import org.jetbrains.kotlin.utils.fileUtils.withReplacedExtensionOrNull
+import org.junit.Assert
 import java.io.File
 import java.lang.Boolean.getBoolean
 
@@ -349,7 +350,9 @@ abstract class BasicIrBoxTest(
                     dtsFile.write(compiledModule.tsDefinitions ?: error("No ts definitions"))
                 }
 
-                compiledOutput.jsProgram?.let { JsAstHandler.processUnitsOfJsProgram(it, units, targetBackend = TargetBackend.JS_IR) }
+                compiledOutput.jsProgram?.let {
+                    JsAstHandler.processUnitsOfJsProgram(it, units, targetBackend = TargetBackend.JS_IR) { Assert.fail(it) }
+                }
             }
 
             if (runIrPir) {
@@ -371,7 +374,9 @@ abstract class BasicIrBoxTest(
                     verifySignatures = !skipMangleVerification,
                 )
                 compiledModule.outputs!!.writeTo(pirOutputFile, config)
-                JsAstHandler.processUnitsOfJsProgram(compiledModule.outputs!!.jsProgram!!, units, targetBackend = TargetBackend.JS_IR)
+                JsAstHandler.processUnitsOfJsProgram(compiledModule.outputs!!.jsProgram!!, units, targetBackend = TargetBackend.JS_IR)  {
+                    Assert.fail(it)
+                }
             }
         }
     }

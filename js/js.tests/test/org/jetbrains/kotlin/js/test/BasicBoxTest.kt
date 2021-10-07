@@ -56,6 +56,7 @@ import org.jetbrains.kotlin.utils.DFS
 import org.jetbrains.kotlin.utils.JsMetadataVersion
 import org.jetbrains.kotlin.utils.KotlinJavascriptMetadata
 import org.jetbrains.kotlin.utils.KotlinJavascriptMetadataUtils
+import org.junit.Assert
 import java.io.ByteArrayOutputStream
 import java.io.Closeable
 import java.io.File
@@ -683,7 +684,7 @@ abstract class BasicBoxTest(
             incrementalData.header = incrementalService.headerMetadata
         }
 
-        JsAstHandler.processUnitsOfJsProgram(translationResult.program, units, targetBackend)
+        JsAstHandler.processUnitsOfJsProgram(translationResult.program, units, targetBackend) { Assert.fail(it) }
         JsSourceMapHandler.checkSourceMap(outputFile, translationResult.program, remap) { expected, actual ->
             TestCase.assertEquals(expected, actual)
         }
