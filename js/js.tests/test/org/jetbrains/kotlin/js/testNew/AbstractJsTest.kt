@@ -51,8 +51,10 @@ abstract class AbstractJsTest(
 open class AbstractBoxJsTest : AbstractJsTest(pathToTestDir = "${JsEnvironmentConfigurator.TEST_DATA_DIR_PATH}/box/", testGroupOutputDirPrefix = "box/") {
     override fun configure(builder: TestConfigurationBuilder) {
         super.configure(builder)
-        builder.defaultDirectives {
-            +JsEnvironmentConfigurationDirectives.RUN_MINIFIER_BY_DEFAULT
+        with(builder) {
+            defaultDirectives {
+                +JsEnvironmentConfigurationDirectives.RUN_MINIFIER_BY_DEFAULT
+            }
         }
     }
 }
@@ -78,8 +80,10 @@ open class AbstractJsLegacyPrimitiveArraysBoxTest : AbstractJsTest(
 ) {
     override fun configure(builder: TestConfigurationBuilder) {
         super.configure(builder)
-        builder.defaultDirectives {
-            -JsEnvironmentConfigurationDirectives.TYPED_ARRAYS
+        with(builder) {
+            defaultDirectives {
+                -JsEnvironmentConfigurationDirectives.TYPED_ARRAYS
+            }
         }
     }
 }
@@ -90,9 +94,11 @@ open class AbstractSourceMapGenerationSmokeTest : AbstractJsTest(
 ) {
     override fun configure(builder: TestConfigurationBuilder) {
         super.configure(builder)
-        builder.defaultDirectives {
-            +JsEnvironmentConfigurationDirectives.GENERATE_SOURCE_MAP
-            -JsEnvironmentConfigurationDirectives.GENERATE_NODE_JS_RUNNER
+        with(builder) {
+            defaultDirectives {
+                +JsEnvironmentConfigurationDirectives.GENERATE_SOURCE_MAP
+                -JsEnvironmentConfigurationDirectives.GENERATE_NODE_JS_RUNNER
+            }
         }
     }
 }
@@ -103,13 +109,15 @@ open class AbstractOutputPrefixPostfixTest : AbstractJsTest(
 ) {
     override fun configure(builder: TestConfigurationBuilder) {
         super.configure(builder)
-        builder.defaultDirectives {
-            -JsEnvironmentConfigurationDirectives.GENERATE_NODE_JS_RUNNER
-        }
-        builder.configureJsArtifactsHandlersStep {
-            useHandlers(
-                ::JsPrefixPostfixHandler
-            )
+        with(builder) {
+            defaultDirectives {
+                -JsEnvironmentConfigurationDirectives.GENERATE_NODE_JS_RUNNER
+            }
+            configureJsArtifactsHandlersStep {
+                useHandlers(
+                    ::JsPrefixPostfixHandler
+                )
+            }
         }
     }
 }
@@ -120,10 +128,12 @@ open class AbstractMultiModuleOrderTest : AbstractJsTest(
 ) {
     override fun configure(builder: TestConfigurationBuilder) {
         super.configure(builder)
-        builder.configureJsArtifactsHandlersStep {
-            useHandlers(
-                ::JsWrongModuleHandler
-            )
+        with(builder) {
+            configureJsArtifactsHandlersStep {
+                useHandlers(
+                    ::JsWrongModuleHandler
+                )
+            }
         }
     }
 }
