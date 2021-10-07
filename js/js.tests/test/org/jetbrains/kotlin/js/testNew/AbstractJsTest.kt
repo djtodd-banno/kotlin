@@ -69,6 +69,11 @@ open class AbstractJsCodegenInlineTest : AbstractJsTest(
     testGroupOutputDirPrefix = "codegen/boxInline"
 )
 
+open class AbstractIrCodegenWasmJsInteropJsTest : AbstractJsTest(
+    pathToTestDir = "compiler/testData/codegen/boxWasmJsInterop",
+    testGroupOutputDirPrefix = "codegen/wasmJsInteropWasm"
+)
+
 open class AbstractJsLegacyPrimitiveArraysBoxTest : AbstractJsTest(
     pathToTestDir = "compiler/testData/codegen/box/arrays/",
     testGroupOutputDirPrefix = "codegen/box/arrays-legacy-primitivearrays/"

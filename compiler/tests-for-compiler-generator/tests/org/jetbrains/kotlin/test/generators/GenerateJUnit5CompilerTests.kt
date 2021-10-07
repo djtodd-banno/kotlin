@@ -177,6 +177,10 @@ fun generateJUnit5CompilerTests(args: Array<String>) {
                 model("codegen/boxInline")
             }
 
+            testClass<AbstractIrCodegenWasmJsInteropJsTest> {
+                model("codegen/boxWasmJsInterop")
+            }
+
             testClass<AbstractJsLegacyPrimitiveArraysBoxTest> {
                 model("codegen/box/arrays")
             }

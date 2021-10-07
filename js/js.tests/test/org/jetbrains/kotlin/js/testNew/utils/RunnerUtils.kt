@@ -16,6 +16,7 @@ import org.jetbrains.kotlin.test.directives.JsEnvironmentConfigurationDirectives
 import org.jetbrains.kotlin.test.directives.JsEnvironmentConfigurationDirectives.NO_JS_MODULE_SYSTEM
 import org.jetbrains.kotlin.test.directives.JsEnvironmentConfigurationDirectives.RUN_PLAIN_BOX_FUNCTION
 import org.jetbrains.kotlin.test.model.BinaryArtifacts
+import org.jetbrains.kotlin.test.model.TestFile
 import org.jetbrains.kotlin.test.model.TestModule
 import org.jetbrains.kotlin.test.services.*
 import org.jetbrains.kotlin.test.services.configuration.JsEnvironmentConfigurator
@@ -24,17 +25,31 @@ import java.io.File
 
 private const val MODULE_EMULATION_FILE = "${JsEnvironmentConfigurator.TEST_DATA_DIR_PATH}/moduleEmulation.js"
 
-private fun extractJsFiles(testServices: TestServices, modulesToArtifact: Map<TestModule, BinaryArtifacts.Js>): List<String> {
+private fun extractJsFiles(
+    testServices: TestServices, modulesToArtifact: Map<TestModule, BinaryArtifacts.Js>
+): Pair<List<String>, List<String>> {
     val outputDir = JsEnvironmentConfigurator.getJsArtifactsOutputDir(testServices)
-    return modulesToArtifact
+
+    fun copyInputJsFile(module: TestModule, inputJsFile: TestFile): String {
+        val newName = JsEnvironmentConfigurator.getJsArtifactSimpleName(testServices, module.name) + "-js-" + inputJsFile.name
+        val targetFile = File(outputDir, newName)
+        targetFile.writeText(inputJsFile.originalContent)
+        return targetFile.absolutePath
+    }
+
+    val inputJsFiles = modulesToArtifact
         .flatMap { moduleToArtifact -> moduleToArtifact.key.files.map { moduleToArtifact.key to it } }
         .filter { it.second.isJsFile }
-        .map { (module, inputJsFile) ->
-            val newName = JsEnvironmentConfigurator.getJsArtifactSimpleName(testServices, module.name) + "-js-" + inputJsFile.name
-            val targetFile = File(outputDir, newName)
-            targetFile.writeText(inputJsFile.originalContent)
-            targetFile.absolutePath
-        }
+
+
+    val after = inputJsFiles
+        .filter { (_, inputJsFile) -> inputJsFile.name.endsWith("__after.js") }
+        .map { (module, inputJsFile) -> copyInputJsFile(module, inputJsFile) }
+    val before = inputJsFiles
+        .filterNot { (_, inputJsFile) -> inputJsFile.name.endsWith("__after.js") }
+        .map { (module, inputJsFile) -> copyInputJsFile(module, inputJsFile) }
+
+    return before to after
 }
 
 private fun getAdditionalFiles(testServices: TestServices): List<String> {
@@ -79,7 +94,7 @@ fun getAllFilesForRunner(
     val pirOutputDir = JsEnvironmentConfigurator.getPirJsArtifactsOutputDir(testServices)
 
     val commonFiles = JsAdditionalSourceProvider.getAdditionalJsFiles(originalFile.parent).map { it.absolutePath }
-    val inputJsFiles = extractJsFiles(testServices, modulesToArtifact)
+    val (inputJsFilesBefore, inputJsFilesAfter) = extractJsFiles(testServices, modulesToArtifact)
     val additionalFiles = getAdditionalFiles(testServices)
     val additionalMainFiles = getAdditionalMainFiles(testServices)
 
@@ -87,9 +102,9 @@ fun getAllFilesForRunner(
     val dceJsFiles = artifactsPaths.map { it.replace(outputDir.absolutePath, dceOutputDir.absolutePath) }
     val pirJsFiles = artifactsPaths.map { it.replace(outputDir.absolutePath, pirOutputDir.absolutePath) }
 
-    val allJsFiles = additionalFiles + inputJsFiles + artifactsPaths + commonFiles + additionalMainFiles
-    val dceAllJsFiles = additionalFiles + inputJsFiles + dceJsFiles + commonFiles + additionalMainFiles
-    val pirAllJsFiles = additionalFiles + inputJsFiles + pirJsFiles + commonFiles + additionalMainFiles
+    val allJsFiles = additionalFiles + inputJsFilesBefore + artifactsPaths + commonFiles + additionalMainFiles + inputJsFilesAfter
+    val dceAllJsFiles = additionalFiles + inputJsFilesBefore + dceJsFiles + commonFiles + additionalMainFiles + inputJsFilesAfter
+    val pirAllJsFiles = additionalFiles + inputJsFilesBefore + pirJsFiles + commonFiles + additionalMainFiles + inputJsFilesAfter
 
     return Triple(allJsFiles, dceAllJsFiles, pirAllJsFiles)
 }

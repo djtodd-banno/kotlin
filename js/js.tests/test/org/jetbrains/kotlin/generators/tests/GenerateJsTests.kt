@@ -99,10 +99,6 @@ fun main(args: Array<String>) {
                 model("codegen/boxWasmJsInterop", targetBackend = TargetBackend.WASM)
             }
 
-            testClass<AbstractIrCodegenWasmJsInteropJsTest> {
-                model("codegen/boxWasmJsInterop", targetBackend = TargetBackend.JS_IR)
-            }
-
             testClass<AbstractIrJsCodegenBoxES6Test> {
                 model("codegen/box", targetBackend = TargetBackend.JS_IR_ES6, excludeDirs = jvmOnlyBoxTests)
             }

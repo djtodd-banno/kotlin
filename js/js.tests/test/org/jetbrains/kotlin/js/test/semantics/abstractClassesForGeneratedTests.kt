@@ -14,7 +14,3 @@ abstract class AbstractBoxJsTest : BasicBoxTest(
     override val runMinifierByDefault: Boolean = true
 }
 
-abstract class AbstractIrCodegenWasmJsInteropJsTest : BasicBoxTest(
-    "compiler/testData/codegen/wasmJsInterop",
-    "codegen/wasmJsInteropWasm"
-)
