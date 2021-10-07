@@ -21,10 +21,7 @@ import org.jetbrains.kotlin.ir.backend.js.lower.calls.CallsLowering
 import org.jetbrains.kotlin.ir.backend.js.lower.cleanup.CleanupLowering
 import org.jetbrains.kotlin.ir.backend.js.lower.coroutines.JsSuspendArityStoreLowering
 import org.jetbrains.kotlin.ir.backend.js.lower.coroutines.JsSuspendFunctionsLowering
-import org.jetbrains.kotlin.ir.backend.js.lower.inline.CopyInlineFunctionBodyLowering
-import org.jetbrains.kotlin.ir.backend.js.lower.inline.RemoveInlineDeclarationsWithReifiedTypeParametersLowering
-import org.jetbrains.kotlin.ir.backend.js.lower.inline.SyntheticAccessorLowering
-import org.jetbrains.kotlin.ir.backend.js.lower.inline.jsRecordExtractedLocalClasses
+import org.jetbrains.kotlin.ir.backend.js.lower.inline.*
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 
@@ -254,6 +251,12 @@ private val functionInliningPhase = makeBodyLoweringPhase(
         localClassesInInlineLambdasPhase, localClassesExtractionFromInlineFunctionsPhase,
         syntheticAccessorLoweringPhase
     )
+)
+
+private val wrapInlineDeclarationsWithReifiedTypeParametersLowering = makeBodyLoweringPhase(
+    ::WrapInlineDeclarationsWithReifiedTypeParametersLowering,
+    name = "WrapInlineDeclarationsWithReifiedTypeParametersLowering",
+    description = "Wrap inline declarations with reified type parameters"
 )
 
 private val copyInlineFunctionBodyLoweringPhase = makeDeclarationTransformerPhase(
@@ -767,6 +770,7 @@ private val loweringList = listOf<Lowering>(
     localClassesInInlineFunctionsPhase,
     localClassesExtractionFromInlineFunctionsPhase,
     syntheticAccessorLoweringPhase,
+    wrapInlineDeclarationsWithReifiedTypeParametersLowering,
     functionInliningPhase,
     copyInlineFunctionBodyLoweringPhase,
     removeInlineDeclarationsWithReifiedTypeParametersLoweringPhase,
