@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.test.backend.handlers.JsBinaryArtifactHandler
 import org.jetbrains.kotlin.test.directives.JsEnvironmentConfigurationDirectives
 import org.jetbrains.kotlin.test.model.BinaryArtifacts
 import org.jetbrains.kotlin.test.model.TestModule
+import org.jetbrains.kotlin.test.services.JUnit5Assertions
 import org.jetbrains.kotlin.test.services.TestServices
 import org.jetbrains.kotlin.test.services.configuration.JsEnvironmentConfigurator
 import org.jetbrains.kotlin.test.services.moduleStructure
@@ -18,6 +19,7 @@ class JsArtifactsDumpHandler(testServices: TestServices) : JsBinaryArtifactHandl
     override fun processModule(module: TestModule, info: BinaryArtifacts.Js) {}
 
     override fun processAfterAllModules(someAssertionWasFailed: Boolean) {
+        if (JUnit5Assertions.isTeamCityBuild) return
         val originalFile = testServices.moduleStructure.originalTestDataFiles.first()
         val allDirectives = testServices.moduleStructure.allDirectives
 
